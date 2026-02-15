@@ -1,0 +1,40 @@
+name: ci
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [backend, auth_service, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        if: matrix.service != 'frontend'
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        if: matrix.service == 'frontend'
+        with:
+          node-version: '20'
+      - name: Backend check
+        if: matrix.service == 'backend'
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          python -m compileall app
+      - name: Django check
+        if: matrix.service == 'auth_service'
+        run: |
+          cd auth_service
+          pip install -r requirements.txt
+          python manage.py check
+      - name: Frontend build
+        if: matrix.service == 'frontend'
+        run: |
+          cd frontend
+          npm ci
+          npm run build
